@@ -1,0 +1,12 @@
+!gradle/wrapper/gradle-wrapper.jar
+**/build/
+*.ipr
+*.iws
+.DS_Store
+.gradle
+/.idea
+/.push-options
+/build/
+/materials/
+hs_err_pid*.log
+target/

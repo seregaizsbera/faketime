@@ -1,0 +1,14 @@
+plugins {
+    id("java-library")
+}
+
+int javaLanguageLevel = "$javaLanguageLevel".toInteger()
+
+java { JavaPluginExtension jpe ->
+    jpe.sourceCompatibility = javaLanguageLevel
+    jpe.targetCompatibility = javaLanguageLevel
+}
+
+compileJava { JavaCompile task ->
+    task.options.compilerArgs << "--add-exports" <<  "java.base/jdk.internal.misc=ru.seregaizsbera.faketime.interceptors"
+}

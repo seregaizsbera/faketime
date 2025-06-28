@@ -1,0 +1,63 @@
+plugins {
+    id("jacoco")
+    id("java-library")
+    id("maven-publish")
+}
+
+group = rootProject.group
+version = rootProject.version
+
+int javaLanguageLevel = "$javaLanguageLevel".toInteger()
+
+java {
+    sourceCompatibility = javaLanguageLevel
+    targetCompatibility = javaLanguageLevel
+    withSourcesJar()
+    withJavadocJar()
+}
+
+repositories {
+    mavenCentral()
+}
+
+publishing {
+    publications {
+        create("faketime", MavenPublication, {
+            from components.java
+        })
+    }
+}
+
+dependencies {
+    api("org.junit.jupiter:junit-jupiter-api:5.10.2")
+    implementation(project(":"))
+    testImplementation("org.assertj:assertj-core:3.22.0")
+    testImplementation("org.awaitility:awaitility:4.2.0")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.2")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.10.2")
+}
+
+tasks.withType(JavaCompile).configureEach({ JavaCompile task ->
+    CompileOptions co = task.options
+    co.release = javaLanguageLevel
+    co.encoding = "UTF-8"
+    co.deprecation = true
+    co.warnings = true
+    co.compilerArgs << "-Xlint:all"
+})
+
+tasks.withType(Javadoc).configureEach({ Javadoc task ->
+    task.options({ StandardJavadocDocletOptions sjdo ->
+        sjdo.encoding("UTF-8")
+        sjdo.docEncoding("UTF-8")
+        sjdo.addBooleanOption("Xdoclint:none", true)
+        sjdo.jFlags("-Dfile.encoding=UTF-8")
+        sjdo.memberLevel = JavadocMemberLevel.PRIVATE
+    })
+})
+
+tasks.withType(Test).configureEach({ Test test ->
+    test.useJUnitPlatform()
+    test.jvmArgs += ["--add-exports", "java.base/jdk.internal.misc=ALL-UNNAMED"]
+    test.jvmArgs += ["-XX:+EnableDynamicAgentLoading"]
+})

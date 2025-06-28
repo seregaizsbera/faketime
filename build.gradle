@@ -1,0 +1,80 @@
+plugins {
+    id("jacoco")
+    id("java-library")
+    id("maven-publish")
+    id("org.unbroken-dome.test-sets").version("$testSetsVersion")
+}
+
+group = "ru.seregaizsbera.faketime"
+version = "1.0.0"
+
+int javaLanguageLevel = "$javaLanguageLevel".toInteger()
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    sourceCompatibility = javaLanguageLevel
+    targetCompatibility = javaLanguageLevel
+    withSourcesJar()
+    withJavadocJar()
+}
+
+testSets {
+    integrationTest
+}
+
+publishing {
+    publications {
+        create("faketime", MavenPublication, {
+            from(this.project.components.java)
+        })
+    }
+}
+
+dependencies {
+    compileOnly(project(":interceptors"))
+    implementation("net.bytebuddy:byte-buddy:$byteBuddyVersion")
+    implementation("net.bytebuddy:byte-buddy-agent:$byteBuddyVersion")
+    integrationTestImplementation(project(":interceptors"))
+    testImplementation("org.assertj:assertj-core:$assertjVersion")
+    testImplementation("org.awaitility:awaitility:$awaitilityVersion")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:$junitPlatformVersion")
+}
+
+tasks.withType(JavaCompile).configureEach({ JavaCompile task ->
+    CompileOptions co = task.options
+    co.release = javaLanguageLevel
+    co.encoding = "UTF-8"
+    co.deprecation = true
+    co.warnings = true
+    co.compilerArgs << "-Xlint:all"
+})
+
+tasks.withType(Javadoc).configureEach({ Javadoc task ->
+    task.options({ StandardJavadocDocletOptions sjdo ->
+        sjdo.encoding("UTF-8")
+        sjdo.docEncoding("UTF-8")
+        sjdo.addBooleanOption("Xdoclint:none", true)
+        sjdo.jFlags("-Dfile.encoding=UTF-8")
+        sjdo.memberLevel = JavadocMemberLevel.PRIVATE
+    })
+})
+
+tasks.named("processResources").configure({ Task task ->
+    task.dependsOn(project(":interceptors").tasks.jar)
+    task.from(project(":interceptors").tasks.jar)
+})
+
+tasks.withType(Test).configureEach({ Test test ->
+    test.useJUnitPlatform()
+    test.jvmArgs += ["--add-exports", "java.base/jdk.internal.misc=ALL-UNNAMED"]
+    test.jvmArgs += ["-XX:+EnableDynamicAgentLoading"]
+})
+
+tasks.named("check").configure({ Task task ->
+    task.dependsOn("integrationTest")
+})

@@ -1,0 +1,3 @@
+rootProject.name = "faketime"
+include("interceptors")
+include("faketime-junit")
